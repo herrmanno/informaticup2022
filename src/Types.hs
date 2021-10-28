@@ -38,7 +38,7 @@ data TrainLocation = TLocStation
                         (ID Connection) -- ^ current location
                         (ID Station)    -- ^ station heading to
                         Double          -- ^ remaining distance to station
-                   deriving (Eq)
+                   deriving (Show, Eq)
 
 isBoardable :: TrainLocation -> Bool
 isBoardable (TLocStation _ b) = b
@@ -46,7 +46,7 @@ isBoardable _ = False
 
 data TrainAction = Start (ID Station)
                  | Depart (ID Connection) 
-                 deriving (Eq)
+                 deriving (Show, Eq, Ord)
 
 data Passenger = Passenger
     { p_id :: ID Passenger
@@ -58,11 +58,11 @@ data Passenger = Passenger
 
 data PassengerLocation = PLocStation (ID Station)
                        | PLocTrain (ID Train)
-                       deriving (Eq)
+                       deriving (Show, Eq)
 
 data PassengerAction = Board (ID Train)
                      | Detrain
-                     deriving (Eq)
+                     deriving (Show, Eq)
 
 $(makeLenses ''Station)
 $(makeLenses ''Connection)

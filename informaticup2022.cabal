@@ -42,7 +42,9 @@ library
       base >=4.7 && <5
     , containers
     , heap
+    , hspec
     , lens
+    , transformers
   default-language: Haskell2010
 
 executable informaticup2022-exe
@@ -62,8 +64,10 @@ executable informaticup2022-exe
       base >=4.7 && <5
     , containers
     , heap
+    , hspec
     , informaticup2022
     , lens
+    , transformers
   default-language: Haskell2010
 
 test-suite informaticup2022-test
@@ -88,4 +92,5 @@ test-suite informaticup2022-test
     , hspec
     , informaticup2022
     , lens
+    , transformers
   default-language: Haskell2010
