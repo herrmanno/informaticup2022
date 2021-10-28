@@ -23,12 +23,14 @@ dependencies:
 - base >= 4.7 && < 5
 - containers
 - heap
+- lens
 
 default-extensions:
 - NamedFieldPuns
 - FlexibleInstances
 - MultiParamTypeClasses
 - TypeFamilies
+- TemplateHaskell
 
 library:
   source-dirs: src
@@ -54,3 +56,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - informaticup2022
+    - hspec

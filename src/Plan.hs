@@ -9,19 +9,19 @@ import qualified Data.List.NonEmpty as NL
 
 data StateScore
 
-instance HeapItem StateScore (NonEmpty State) where
-    newtype Prio StateScore (NonEmpty State) = P { prio :: Double } deriving (Eq, Ord)
-    type Val StateScore (NonEmpty State) = (NonEmpty State)
+instance HeapItem StateScore State where
+    newtype Prio StateScore State = P { prio :: Double } deriving (Eq, Ord)
+    type Val StateScore State = State
 
-    split s = (P $ scoreForState (NL.head s), s)
+    split s = (P $ scoreForState s, s)
     merge (_,s) = s
 
--- findBestStateRoute :: State -> [State]
-findBestStateRoute s = go (H.singleton $ NL.fromList [s]) where
-    go :: Heap StateScore (NonEmpty State) -> Maybe (NonEmpty State)
+findBestStateRoute :: [State] -> Maybe State
+findBestStateRoute s = go (H.fromList s) where
+    go :: Heap StateScore State -> Maybe State
     go heap =
         let Just (s, heap') = H.view heap
-            ss' = [ s' <| s | s' <- nextStates (NL.head s), stateIsValid s']
-        in if stateIsFinished (NL.head s)
+            ss' = [s' | s' <- nextStates s, stateIsValid s']
+        in if stateIsFinished s
             then Just s
             else go (foldr H.insert heap' ss')
