@@ -31,6 +31,8 @@ data State = State
     , passengerActions :: M.Map (ID Passenger) [PassengerAction]
     } deriving (Show)
 
+emptyState = State 0 M.empty M.empty M.empty M.empty
+
 -----------------------------------------------------------
 --                  ACCESSORS
 -----------------------------------------------------------
@@ -56,7 +58,7 @@ connectionsFrom c s_id = cs where
     endsAtStation c = let (a,b) = c_stations c in a == s_id || b == s_id
 
 -----------------------------------------------------------
---                  Prepare Input
+--                  Prepare Context
 -----------------------------------------------------------
 
 -- | Assigns stations to all pending trains and returns the list of resulting states

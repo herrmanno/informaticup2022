@@ -5,51 +5,83 @@ import Types
 import State
 import qualified Data.Set as S
 import qualified Data.Map as M
-
--- ctx = Context
---     { stations = S.fromList [ Station 1 1, Station 2 2]
---     , connections = S.fromList [ Connection 1 (1,2) 2 10 ]
---     , trains = S.fromList [ Train 1 (Just 1) 1 1, Train 2 Nothing 2 2, Train 3 Nothing 3 3]
---     , passengers = S.fromList [ Passenger 1 1 2 1 10, Passenger 2 2 1 5 10]
---     }
+import Control.Monad.Trans.State (evalStateT)
 
 spec = do
     describe "State" $ do
-        it "should set train start to all available stations" $ do
-            let trainID = 1
-            let ctx = emptyContext
-                    { trains = S.singleton (Train trainID Nothing 1 1)
-                    , stations = S.fromList [ Station 1 1, Station 2 2]
-                    }
-            let result = setTrainStartPosition ctx trainID
-            let target =
-                    [   ( ctx { trains = S.singleton (Train trainID (Just 1) 1 1) }
-                        , M.singleton trainID [Start 1]
-                        )
-                    ,   ( ctx { trains = S.singleton (Train trainID (Just 2) 1 1) }
-                        , M.singleton trainID [Start 2]
-                        )
+        it "should return all train (IDs) at given station" $ do
+            let st = emptyState {
+                trainLocations = M.fromList
+                    [ (1, TLocStation 1 False)
+                    , (2, TLocStation 1 False)
+                    , (3, TLocStation 2 False)
+                    , (4, TLocConnection 0 0 0)
                     ]
-            S.fromList result `shouldBe` S.fromList target
+            }
+            trainsInStation st 1 `shouldBe` [1, 2]
+            trainsInStation st 2 `shouldBe` [3]
+            trainsInStation st 3 `shouldBe` []
 
-        it "should set all train starts to all available stations" $ do
-            let ctx = emptyContext
-                    { trains = S.fromList [Train 1 Nothing 1 1, Train 2 Nothing 1 1]
-                    , stations = S.fromList [Station 1 1, Station 2 2]
-                    }
-            let result = setTrainStartPositions ctx
-            let target =
-                    [   ( ctx { trains = S.fromList [Train 1 (Just 1) 1 1, Train 2 (Just 1) 1 1] }
-                        , M.fromList [(1, [Start 1]), (2, [Start 1])]
-                        )
-                    ,   ( ctx { trains = S.fromList [Train 1 (Just 1) 1 1, Train 2 (Just 2) 1 1] }
-                        , M.fromList [(1, [Start 1]), (2, [Start 2])]
-                        )
-                    ,   ( ctx { trains = S.fromList [Train 1 (Just 2) 1 1, Train 2 (Just 1) 1 1] }
-                        , M.fromList [(1, [Start 2]), (2, [Start 1])]
-                        )
-                    ,   ( ctx { trains = S.fromList [Train 1 (Just 2) 1 1, Train 2 (Just 2) 1 1] }
-                        , M.fromList [(1, [Start 2]), (2, [Start 2])]
-                        )
+        it "should return all train (IDs) at given connection" $ do
+            let st = emptyState {
+                trainLocations = M.fromList
+                    [ (1, TLocConnection 1 0 0)
+                    , (2, TLocConnection 1 0 0)
+                    , (3, TLocConnection 2 0 0)
+                    , (4, TLocStation 0 False)
                     ]
-            S.fromList result `shouldBe` S.fromList target
+            }
+            trainsInConnection st 1 `shouldBe` [1, 2]
+            trainsInConnection st 2 `shouldBe` [3]
+            trainsInConnection st 3 `shouldBe` []
+        
+        it "should recognize valid state" $ do
+            let ctx = emptyContext
+                    { stations = S.singleton (Station 1 1)
+                    , connections = S.singleton (Connection 1 (1,1) 1 1)
+                    }
+            let st = emptyState {
+                trainLocations = M.fromList [(1, TLocStation 1 False), (2, TLocConnection 1 1 0)]
+            }
+            result <- evalStateT (stateIsValid st) ctx
+            result `shouldBe` True
+
+        it "should recognize too many trains in station" $ do
+            let ctx = emptyContext { stations = S.singleton (Station 1 1) }
+            let st = emptyState {
+                trainLocations = M.fromList [(1, TLocStation 1 False), (2, TLocStation 1 False)]
+            }
+            result <- evalStateT (stateIsValid st) ctx
+            result `shouldBe` False
+
+        it "should recognize too many trains in connection" $ do
+            let ctx = emptyContext { connections = S.singleton (Connection 1 (1,1) 1 1) }
+            let st = emptyState {
+                trainLocations = M.fromList [(1, TLocConnection 1 1 0), (2, TLocConnection 1 1 0)]
+            }
+            result <- evalStateT (stateIsValid st) ctx
+            result `shouldBe` False
+
+        it "should recognize finished state (all passengers at destination)" $ do
+            let ctx = emptyContext { passengers = S.fromList [Passenger 1 1 2 0 0, Passenger 2 2 1 0 0] }
+            let st = emptyState {
+                passengerLocations = M.fromList [(1,PLocStation 2), (2,PLocStation 1)]
+            }
+            result <- evalStateT (stateIsFinished st) ctx
+            result `shouldBe` True
+
+        it "should recognize non-finished state (all passengers at destination) (1)" $ do
+            let ctx = emptyContext { passengers = S.fromList [Passenger 1 1 2 0 0, Passenger 2 2 1 0 0] }
+            let st = emptyState {
+                passengerLocations = M.fromList [(1,PLocStation 1), (2,PLocStation 2)]
+            }
+            result <- evalStateT (stateIsFinished st) ctx
+            result `shouldBe` False
+
+        it "should recognize non-finished state (all passengers at destination) (2)" $ do
+            let ctx = emptyContext { passengers = S.fromList [Passenger 1 1 2 0 0] }
+            let st = emptyState {
+                passengerLocations = M.fromList [(1,PLocTrain 2)]
+            }
+            result <- evalStateT (stateIsFinished st) ctx
+            result `shouldBe` False
