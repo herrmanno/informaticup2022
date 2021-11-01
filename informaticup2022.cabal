@@ -25,9 +25,15 @@ source-repository head
 
 library
   exposed-modules:
+      App
+      Context
       Plan
       State
       Types
+      Types.Connection
+      Types.Passenger
+      Types.Station
+      Types.Train
   other-modules:
       Paths_informaticup2022
   hs-source-dirs:
@@ -37,6 +43,7 @@ library
       FlexibleInstances
       MultiParamTypeClasses
       TypeFamilies
+      RankNTypes
       TemplateHaskell
   build-depends:
       base >=4.7 && <5
@@ -58,6 +65,7 @@ executable informaticup2022-exe
       FlexibleInstances
       MultiParamTypeClasses
       TypeFamilies
+      RankNTypes
       TemplateHaskell
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -84,6 +92,7 @@ test-suite informaticup2022-test
       FlexibleInstances
       MultiParamTypeClasses
       TypeFamilies
+      RankNTypes
       TemplateHaskell
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:

@@ -32,6 +32,7 @@ default-extensions:
 - FlexibleInstances
 - MultiParamTypeClasses
 - TypeFamilies
+- RankNTypes
 - TemplateHaskell
 
 library:

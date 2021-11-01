@@ -1,7 +1,8 @@
 module Plan where
 
 import Prelude hiding (head)
-import State (State, scoreForState, nextStates, stateIsValid, stateIsFinished, Context)
+import Context (Context)
+import State (State, scoreForState, nextStates, stateIsValid, stateIsFinished)
 import Data.Heap (Heap, HeapItem, Prio, Val)
 import qualified Data.Heap as H
 import Data.List.NonEmpty (NonEmpty ((:|)), (<|))
@@ -18,7 +19,7 @@ instance HeapItem StateScore State where
     split s = (P $ scoreForState s, s)
     merge (_,s) = s
 
-findBestStateRoute :: Context -> [State] -> Maybe State
+findBestStateRoute :: Context c => c -> [State] -> Maybe State
 findBestStateRoute c s = go (H.fromList s) where
     go :: Heap StateScore State -> Maybe State
     go heap =

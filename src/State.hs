@@ -2,34 +2,27 @@ module State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Types
-import Control.Monad.Trans.State (StateT, get)
+import App (App )
+import Context (Context(..), connectionsFrom)
+import Types (ID)
+import Types.Station (Station(..))
+import Types.Connection (Connection(..))
+import Types.Train (Train(..), TrainLocation(..), TrainAction(..), isBoardable)
+import Types.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..))
 import Control.Arrow (second)
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.State (StateT, get)
 
 -----------------------------------------------------------
 --                  DATA
 -----------------------------------------------------------
-
--- Monad type for computations that require access to the immutable problem context
-type App m a = StateT Context m a
-
-data Context = Context
-    { stations :: S.Set Station
-    , connections :: S.Set Connection
-    , trains :: S.Set Train
-    , passengers :: S.Set Passenger
-    } deriving (Show, Eq, Ord)
-
-emptyContext = Context S.empty S.empty S.empty S.empty
-
 data State = State
-    { time :: Time
+    { time :: Int
     , trainLocations :: M.Map (ID Train) TrainLocation
     , passengerLocations :: M.Map (ID Passenger) PassengerLocation
     , trainActions :: M.Map (ID Train) [TrainAction]
     , passengerActions :: M.Map (ID Passenger) [PassengerAction]
-    } deriving (Show)
+    } deriving (Show, Eq, Ord)
 
 emptyState = State 0 M.empty M.empty M.empty M.empty
 
@@ -48,42 +41,6 @@ trainsInConnection s c_id = M.keys $ M.filter isAtStation locs where
     locs = trainLocations s
     isAtStation (TLocConnection c_id' _ _) | c_id == c_id' = True
     isAtStation _ = False
-
-connectionsFrom :: Context -> ID Station -> S.Set (Connection, ID Station)
-connectionsFrom c s_id = cs where
-    cs = S.map withOtherStation $ S.filter endsAtStation (connections c)
-    withOtherStation c@Connection { c_stations = (a,b) }
-        | a == s_id = (c, b)
-        | otherwise = (c, a)
-    endsAtStation c = let (a,b) = c_stations c in a == s_id || b == s_id
-
------------------------------------------------------------
---                  Prepare Context
------------------------------------------------------------
-
--- | Assigns stations to all pending trains and returns the list of resulting states
-setTrainStartPositions :: Context -> [(Context, M.Map (ID Train) [TrainAction])]
-setTrainStartPositions c = go c pendingTrainIDs where
-    pendingTrainIDs = S.elems $ S.map t_id $ S.filter hasNoStation (trains c)
-    go :: Context -> [ID Train] -> [(Context, M.Map (ID Train) [TrainAction])]
-    go _ [] = []
-    go c (t:ts) = let cs = setTrainStartPosition c t in concatMap (merge ts) cs
-    merge [] (c,tas) = [(c,tas)]
-    merge ts (c,tas) = let results = go c ts in fmap (second (M.union tas)) results
-
--- | Returns a list of state where the start station of a train is set to all available stations
-setTrainStartPosition :: Context -> ID Train -> [(Context, M.Map (ID Train) [TrainAction])]
-setTrainStartPosition c tid = 
-    [ (c', tas)
-    | station <- S.elems ss
-    , let c' = c { trains = modifyTrain tid (\t -> t { start = Just (s_id station) }) ts }
-    , let tas = M.singleton tid [Start (s_id station)]
-    ]
-    where
-        ss = stations c
-        ts = trains c
-        modifyTrain :: ID Train -> (Train -> Train) -> S.Set Train -> S.Set Train
-        modifyTrain tid f = S.map (\t -> if tid == t_id t then f t else t)
 
 
 -----------------------------------------------------------
@@ -180,10 +137,6 @@ movePassenger pas s = return $ case ploc M.! pid of
 -----------------------------------------------------------
 --                  RESULT CHECKING
 -----------------------------------------------------------
-
--- stateIsFinished :: State -> Bool
--- stateIsFinished State { passengers, passengerLocations } = all isAtDestination passengers  where
---     isAtDestination Passenger { p_id, destination } = passengerLocations M.! p_id == PLocStation destination
 
 stateIsFinished :: Monad m => State -> App m Bool
 stateIsFinished s = do
