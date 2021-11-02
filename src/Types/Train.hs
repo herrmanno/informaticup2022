@@ -13,6 +13,9 @@ data Train = Train
     , t_capacity :: Int
     } deriving (Eq, Ord, Show)
 
+hasStation :: Train -> Bool
+hasStation = not . hasNoStation
+
 hasNoStation :: Train -> Bool
 hasNoStation t = isNothing (start t)
 
@@ -29,8 +32,12 @@ isBoardable :: TrainLocation -> Bool
 isBoardable (TLocStation _ b) = b
 isBoardable _ = False
 
-data TrainAction = Start (ID Station)
-                 | Depart (ID Connection) 
-                 deriving (Show, Eq, Ord)
+data TrainAction = Start Int (ID Station)
+                 | Depart Int (ID Connection) 
+                 deriving (Eq, Ord)
+
+instance Show TrainAction where
+    show (Start time sid) = show time <> " Start S" <> show sid
+    show (Depart time cid) = show time <> " Line L" <> show cid
 
 makeLenses ''Train

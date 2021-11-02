@@ -28,6 +28,8 @@ dependencies:
 - hspec #TODO: not used for application. Only needed for vscode
 
 default-extensions:
+- TypeApplications
+- TupleSections
 - NamedFieldPuns
 - FlexibleInstances
 - MultiParamTypeClasses

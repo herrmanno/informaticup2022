@@ -17,8 +17,16 @@ data PassengerLocation = PLocStation (ID Station)
                        | PLocTrain (ID Train)
                        deriving (Show, Eq, Ord)
 
-data PassengerAction = Board (ID Train)
-                     | Detrain
-                     deriving (Show, Eq, Ord)
+isPLocStation :: PassengerLocation -> Bool
+isPLocStation (PLocStation _) = True
+isPLocStation _ = False
+
+data PassengerAction = Board Int (ID Train)
+                     | Detrain Int
+                     deriving (Eq, Ord)
+
+instance Show PassengerAction where
+    show (Board time tid) = show time <> " Board T" <> show tid
+    show (Detrain time) = show time <> " Detrain"
 
 makeLenses ''Passenger

@@ -28,10 +28,12 @@ library
       App
       Context
       Plan
+      PlanResult
       State
       Types
       Types.Connection
       Types.Passenger
+      Types.State
       Types.Station
       Types.Train
   other-modules:
@@ -39,6 +41,8 @@ library
   hs-source-dirs:
       src
   default-extensions:
+      TypeApplications
+      TupleSections
       NamedFieldPuns
       FlexibleInstances
       MultiParamTypeClasses
@@ -61,6 +65,8 @@ executable informaticup2022-exe
   hs-source-dirs:
       app
   default-extensions:
+      TypeApplications
+      TupleSections
       NamedFieldPuns
       FlexibleInstances
       MultiParamTypeClasses
@@ -88,6 +94,8 @@ test-suite informaticup2022-test
   hs-source-dirs:
       test
   default-extensions:
+      TypeApplications
+      TupleSections
       NamedFieldPuns
       FlexibleInstances
       MultiParamTypeClasses

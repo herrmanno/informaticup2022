@@ -1,6 +1,9 @@
 module Types where
 
-newtype ID a = ID Int deriving (Show, Eq, Ord)
+newtype ID a = ID Int deriving (Eq, Ord)
+
+instance Show (ID a) where
+    show (ID i) = show i
 
 -- | Num instance of ID type
 --   Is only used for making number literas work in test specs.
