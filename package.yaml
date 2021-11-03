@@ -25,6 +25,8 @@ dependencies:
 - heap
 - lens
 - transformers
+- parsec
+- pretty-simple
 
 default-extensions:
 - ImportQualifiedPost
