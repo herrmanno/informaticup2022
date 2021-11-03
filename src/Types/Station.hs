@@ -1,4 +1,4 @@
-module Types.Station where
+module Types.Station (Station(..)) where
 
 import Control.Lens (makeLenses)
 import Types (ID)

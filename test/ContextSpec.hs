@@ -1,14 +1,19 @@
 module ContextSpec (spec) where
 
-import Test.Hspec ( describe, it, shouldBe )
+import Test.Hspec ( SpecWith, describe, it, shouldBe )
 import Context
+    ( setTrainStartPositions,
+      setTrainStartPosition,
+      connectionsFrom,
+      emptyContext,
+      ContextType(_connections, _trains, _stations) )
 import Types.Station ( Station(Station) )
 import Types.Connection ( Connection(Connection) )
 import Types.Train ( TrainAction(Start), Train(Train), TrainLocation (TLocStation) )
-import State
-import qualified Data.Set as S
-import qualified Data.Map as M
+import Data.Set qualified as S
+import Data.Map qualified as M
 
+spec :: SpecWith ()
 spec = do
     describe "Context" $ do
         it "should return all connection from / to a given station" $ do

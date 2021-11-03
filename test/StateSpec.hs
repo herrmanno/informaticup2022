@@ -1,6 +1,6 @@
 module StateSpec (spec) where
 
-import Test.Hspec ( describe, it, shouldBe )
+import Test.Hspec ( SpecWith, describe, it, shouldBe )
 import App (evalApp)
 import Context (ContextType(..), emptyContext)
 import Types.Station ( Station(Station) )
@@ -18,9 +18,10 @@ import State
       movePassengers,
       movePassenger,
       stateIsFinished )
-import qualified Data.Set as S
-import qualified Data.Map as M
+import Data.Set qualified as S
+import Data.Map qualified as M
 
+spec :: SpecWith ()
 spec = do
     describe "Accessors" $ do
         it "should return all train (IDs) at given station" $ do

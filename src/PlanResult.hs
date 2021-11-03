@@ -1,11 +1,8 @@
-module PlanResult where
+module PlanResult (PlanResult, fromState) where
 
-import qualified Data.Map as M
+import Data.Map qualified as M
 import Types.State (PassengerActions, TrainActions)
 import State (State (passengerActions, trainActions))
-import Types (ID)
-import Types.Train (Train, TrainAction)
-import Types.Passenger (Passenger, PassengerAction)
 import Data.List (intercalate, sort)
 
 data PlanResult = PlanResult TrainActions PassengerActions

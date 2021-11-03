@@ -9,17 +9,16 @@ module Context
     , emptyContext
     ) where
 
-import qualified Data.Set as S
-import qualified Data.Map as M
+import Data.Set qualified as S
+import Data.Map qualified as M
 import Types (ID)
 import Types.Station ( Station(..) )
 import Types.Connection ( Connection(..) )
-import Types.Train ( TrainAction(..), Train(..), hasNoStation, TrainLocation (TLocStation), hasStation )
+import Types.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation )
 import Types.Passenger ( Passenger (..), PassengerLocation (PLocStation) )
-import Control.Arrow (second, Arrow ((***)))
-import Data.Bifunctor (Bifunctor(bimap))
+import Control.Arrow (Arrow ((***)))
 import Data.Foldable (find)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, fromJust)
 import Types.State (PassengerLocations, TrainLocations, TrainActions)
 
 
@@ -51,7 +50,7 @@ emptyContext = ContextType S.empty S.empty S.empty S.empty
 
 -- TODO: should handle case where not connection exists between stations
 stationDistance :: ContextType -> ID Station -> ID Station -> Double
-stationDistance c from to = go from to (S.singleton to) where
+stationDistance c fromStation toStation = go fromStation toStation (S.singleton toStation) where
     go from to visited
         | from == to = 0
         | otherwise =
@@ -80,10 +79,10 @@ instance Context ContextType where
 connectionsFrom :: Context c => c -> ID Station -> S.Set (Connection, ID Station)
 connectionsFrom c s_id = cs where
     cs = S.map withOtherStation $ S.filter endsAtStation (connections c)
-    withOtherStation c@Connection { c_stations = (a,b) }
-        | a == s_id = (c, b)
-        | otherwise = (c, a)
-    endsAtStation c = let (a,b) = c_stations c in a == s_id || b == s_id
+    withOtherStation con@Connection { c_stations = (a,b) }
+        | a == s_id = (con, b)
+        | otherwise = (con, a)
+    endsAtStation con = let (a,b) = c_stations con in a == s_id || b == s_id
 
 -----------------------------------------------------------
 --                  Prepare Context
@@ -95,19 +94,18 @@ setPassengerStartLocations c = M.fromList $ map f (S.elems $ passengers c) where
 
 -- | Assigns stations to all pending trains and returns the list of resulting states
 setTrainStartPositions :: Context c => c -> [(TrainLocations, TrainActions)]
-setTrainStartPositions c = go c trainIDs where
+setTrainStartPositions c = go trainIDs where
     trainIDs = S.elems $ S.map t_id $ trains c
-    pendingTrainIDs = S.elems $ S.map t_id $ S.filter hasNoStation (trains c)
-    go :: Context c => c -> [ID Train] -> [(TrainLocations, TrainActions)]
-    go _ [] = []
-    go c (t:ts) = let cs = setTrainStartPosition c t in concatMap (merge ts) cs
+    go :: [ID Train] -> [(TrainLocations, TrainActions)]
+    go [] = []
+    go (t:ts) = let cs = setTrainStartPosition c t in concatMap (merge ts) cs
     merge [] (tloc,tas) = [(tloc,tas)]
-    merge ts (tloc,tas) = let results = go c ts in fmap (M.union tloc *** M.union tas) results
+    merge ts (tloc,tas) = let results = go ts in fmap (M.union tloc *** M.union tas) results
 
 -- | Returns a list of state where the start station of a train is set to all available stations
 setTrainStartPosition :: Context c => c -> ID Train -> [(TrainLocations, TrainActions)]
 setTrainStartPosition c tid 
-    | hasStation t = let Just sid = start t in [ (M.singleton tid (TLocStation sid True), M.empty) ]
+    | hasStation t = let sid = fromJust (start t) in [ (M.singleton tid (TLocStation sid True), M.empty) ]
     | otherwise =
         [ (tloc, tas)
         | station <- S.elems ss
@@ -115,8 +113,8 @@ setTrainStartPosition c tid
         , let tas = M.singleton tid [Start 0 (s_id station)]
         ]
     where
-        Just t = find ((==tid) . t_id) (S.elems ts)
+        t = case find ((==tid) . t_id) (S.elems ts) of
+            Just t' -> t'
+            _ -> error $ "Bad train id: " <> show tid
         ss = stations c
         ts = trains c
-        modifyTrain :: ID Train -> (Train -> Train) -> S.Set Train -> S.Set Train
-        modifyTrain tid f = S.map (\t -> if tid == t_id t then f t else t)

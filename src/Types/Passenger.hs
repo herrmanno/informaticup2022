@@ -1,4 +1,4 @@
-module Types.Passenger where
+module Types.Passenger (Passenger(..), PassengerLocation(..), isPLocStation, PassengerAction(..)) where
 
 import Control.Lens (makeLenses)
 import Types (ID)

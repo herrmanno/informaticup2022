@@ -1,4 +1,4 @@
-module Types.Train where
+module Types.Train (Train(..), hasNoStation, hasStation, TrainLocation(..), isBoardable, TrainAction(..)) where
 
 import Control.Lens (makeLenses)
 import Data.Maybe (isNothing)

@@ -1,15 +1,34 @@
-module State where
+module State
+    ( State(..)
+    , emptyState
+    , fromContext
+    , trainsInStation
+    , trainsInConnection
+    , scoreForState
+    , nextStates
+    , moveTrains
+    , moveTrain
+    , movePassengers
+    , movePassenger
+    , stateIsValid
+    , stateIsFinished
+    , Score
+    ) where
 
-import qualified Data.Map as M
-import qualified Data.Set as S
+import Data.Map qualified as M
+import Data.Set qualified as S
 import App (App, get)
-import Context (Context(..), connectionsFrom, setTrainStartPosition, setTrainStartPositions, setPassengerStartLocations)
+import Context (Context(..), connectionsFrom, setTrainStartPositions, setPassengerStartLocations)
 import Types (ID)
 import Types.Station (Station(..))
 import Types.Connection (Connection(..))
 import Types.Train (Train(..), TrainLocation(..), TrainAction(..), isBoardable)
 import Types.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..), isPLocStation)
 import Types.State
+    ( PassengerActions,
+      TrainActions,
+      PassengerLocations,
+      TrainLocations )
 import Control.Monad.Trans.Class (lift)
 import Data.Maybe (mapMaybe)
 
@@ -116,7 +135,7 @@ nextTrainStation tid s = case trainLocations s M.! tid of
 
 nextPassengerStationDistance :: ID Passenger -> State -> Double
 nextPassengerStationDistance pid s = case passengerLocations s M.! pid of
-    PLocStation sid -> 0
+    PLocStation _ -> 0
     PLocTrain tid -> max onTrainPenalty (nextTrainStationDistance tid s)
     where
         onTrainPenalty = 0.01
@@ -124,7 +143,7 @@ nextPassengerStationDistance pid s = case passengerLocations s M.! pid of
 -- FIXME: does not use train's velocity!
 nextTrainStationDistance :: ID Train -> State -> Double
 nextTrainStationDistance tid s = case trainLocations s M.! tid of
-    TLocStation sid _ -> 0
+    TLocStation _ _ -> 0
     TLocConnection _ _ d -> d
 
 -----------------------------------------------------------
@@ -177,12 +196,12 @@ moveTrain train s = case tloc M.! tid of
         let cs = S.elems $ connectionsFrom c s_id
         let stayingTrain = s { trainLocations = M.insert tid (TLocStation s_id True) tloc }
             leavingTrains = flip fmap cs $
-                \(c, s_id') ->
-                    let tac = Depart (time s) (c_id c)
-                    in if distance c > vel
+                \(con, s_id') ->
+                    let tac = Depart (time s) (c_id con)
+                    in if distance con > vel
                         -- train is on connection in next round
                         then s
-                            { trainLocations = M.insert tid (TLocConnection (c_id c) s_id' vel) tloc
+                            { trainLocations = M.insert tid (TLocConnection (c_id con) s_id' vel) tloc
                             , trainActions = M.alter (Just . maybe [tac] (tac:)) tid tacs
                             }
                         -- train reaches next station at next round
@@ -204,7 +223,7 @@ movePassengers (p:ps) s = do
     s' <- lift ss
     movePassengers ps s'
 
-movePassenger :: Monad m => Passenger -> State -> App m [State]
+movePassenger :: Monad m => Passenger -> State -> m [State]
 movePassenger pas s = return $ case ploc M.! pid of
     -- passenger at station -> (stay at station) : [board at train | train <- boardable trains at station]
     PLocStation s_id ->

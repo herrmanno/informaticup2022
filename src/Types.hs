@@ -1,5 +1,6 @@
-module Types where
+module Types (ID(..)) where
 
+-- TODO: derive Num
 newtype ID a = ID Int deriving (Eq, Ord)
 
 instance Show (ID a) where

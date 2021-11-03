@@ -1,5 +1,5 @@
-module Types.State where
-import qualified Data.Map as M
+module Types.State (TrainLocations, PassengerLocations, TrainActions, PassengerActions) where
+import Data.Map qualified  as M
 import Types (ID)
 import Types.Train ( Train, TrainAction, TrainLocation )
 import Types.Passenger ( Passenger, PassengerAction, PassengerLocation )

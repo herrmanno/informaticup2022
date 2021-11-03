@@ -1,2 +1,8 @@
 cradle:
   stack:
+  - path: "./app/"
+    component: informaticup2022:exe:informaticup2022-exe
+  - path: "./src/"
+    component: informaticup2022:lib
+  - path: "./test/"
+    component: informaticup2022:test:informaticup2022-test

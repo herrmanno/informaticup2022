@@ -1,4 +1,4 @@
-module Types.Connection where
+module Types.Connection (Connection(..)) where
 
 import Control.Lens (makeLenses)
 import Types (ID)

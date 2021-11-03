@@ -25,9 +25,9 @@ dependencies:
 - heap
 - lens
 - transformers
-- hspec #TODO: not used for application. Only needed for vscode
 
 default-extensions:
+- ImportQualifiedPost
 - TypeApplications
 - TupleSections
 - NamedFieldPuns
@@ -36,6 +36,7 @@ default-extensions:
 - TypeFamilies
 - RankNTypes
 - TemplateHaskell
+- GeneralizedNewtypeDeriving
 
 library:
   source-dirs: src
@@ -44,10 +45,25 @@ executables:
   informaticup2022-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
+    ghc-options: &exe-ghc-options
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    # For details on warnings: https://downloads.haskell.org/~ghc/master/users-guide/using-warnings.html
+    # This list taken from https://medium.com/mercury-bank/enable-all-the-warnings-a0517bc081c3
+    # Enable all warnings with -Weverything, then disable the ones we don’t care about
+    - -Weverything
+    - -Wno-missing-exported-signatures # missing-exported-signatures turns off the more strict -Wmissing-signatures. See https://ghc.haskell.org/trac/ghc/ticket/14794#ticket
+    - -Wno-missing-import-lists # Requires explicit imports of _every_ function (e.g. ‘$’); too strict
+    - -Wno-missed-specialisations # When GHC can’t specialize a polymorphic function. No big deal and requires fixing underlying libraries to solve.
+    - -Wno-all-missed-specialisations # See missed-specialisations
+    - -Wno-unsafe # Don’t use Safe Haskell warnings
+    - -Wno-safe # Don’t use Safe Haskell warnings
+    - -Wno-missing-local-signatures # Warning for polymorphic local bindings; nothing wrong with those.
+    - -Wno-monomorphism-restriction # Don’t warn if the monomorphism restriction is used
+    - -Wno-implicit-prelude # Dont' warn on implicit Prelude import
+    - -Wno-missing-safe-haskell-mode
+    - -Wno-missing-deriving-strategies # Dont' enforce explitic deriving strategy
     dependencies:
     - informaticup2022
 
@@ -55,10 +71,10 @@ tests:
   informaticup2022-test:
     main:                Spec.hs
     source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    ghc-options: *exe-ghc-options
+    # - -threaded
+    # - -rtsopts
+    # - -with-rtsopts=-N
     dependencies:
     - informaticup2022
     - hspec
