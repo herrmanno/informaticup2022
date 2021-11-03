@@ -21,12 +21,11 @@ findBestStateRoute :: Context c => c -> [State] -> Maybe State
 findBestStateRoute c state = go (H.fromList (fmap stateWithScore state)) where
     go :: Heap StateScore (State, Score) -> Maybe State
     go heap = do
-        ((s,_), heap') <- H.view heap
+        ((s,sc), heap') <- H.view heap
         let ss' = [ stateWithScore s'
                   | ss <- evalApp (nextStates s) c
                   , s' <- ss
-                  , valid <- evalApp (stateIsValid s') c
-                  , valid
+                  , runIdentity $ evalApp (stateIsValid s') c
                   ]
         if runIdentity $ evalApp (stateIsFinished s) c
             then Just s

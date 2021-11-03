@@ -14,7 +14,7 @@ import Data.Map qualified as M
 import Types (ID)
 import Types.Station ( Station(..) )
 import Types.Connection ( Connection(..) )
-import Types.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation )
+import Types.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation, TrainStatus (Boardable) )
 import Types.Passenger ( Passenger (..), PassengerLocation (PLocStation) )
 import Control.Arrow (Arrow ((***)))
 import Data.Foldable (find)
@@ -105,11 +105,11 @@ setTrainStartPositions c = go trainIDs where
 -- | Returns a list of state where the start station of a train is set to all available stations
 setTrainStartPosition :: Context c => c -> ID Train -> [(TrainLocations, TrainActions)]
 setTrainStartPosition c tid 
-    | hasStation t = let sid = fromJust (start t) in [ (M.singleton tid (TLocStation sid True), M.empty) ]
+    | hasStation t = let sid = fromJust (start t) in [ (M.singleton tid (TLocStation sid Boardable), M.empty) ]
     | otherwise =
         [ (tloc, tas)
         | station <- S.elems ss
-        , let tloc = M.singleton tid (TLocStation (s_id station) True)
+        , let tloc = M.singleton tid (TLocStation (s_id station) Boardable)
         , let tas = M.singleton tid [Start 0 (s_id station)]
         ]
     where

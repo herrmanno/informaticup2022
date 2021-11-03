@@ -5,8 +5,8 @@ import App (evalApp)
 import Context (ContextType(..), emptyContext)
 import Types.Station ( Station(Station) )
 import Types.Connection ( Connection(Connection) )
-import Types.Train ( TrainLocation(TLocConnection, TLocStation), Train (Train) )
-import Types.Passenger ( PassengerLocation(PLocTrain, PLocStation), Passenger(Passenger) )
+import Types.Train ( TrainLocation(..), TrainStatus(..), Train (Train) )
+import Types.Passenger ( PassengerLocation(..), Passenger(Passenger) )
 import State
     ( State(trainLocations, passengerLocations),
       emptyState,
@@ -27,9 +27,9 @@ spec = do
         it "should return all train (IDs) at given station" $ do
             let st = emptyState {
                 trainLocations = M.fromList
-                    [ (1, TLocStation 1 False)
-                    , (2, TLocStation 1 False)
-                    , (3, TLocStation 2 False)
+                    [ (1, TLocStation 1 Boardable)
+                    , (2, TLocStation 1 Boardable)
+                    , (3, TLocStation 2 Boardable)
                     , (4, TLocConnection 0 0 0)
                     ]
             }
@@ -43,7 +43,7 @@ spec = do
                     [ (1, TLocConnection 1 0 0)
                     , (2, TLocConnection 1 0 0)
                     , (3, TLocConnection 2 0 0)
-                    , (4, TLocStation 0 False)
+                    , (4, TLocStation 0 Boardable)
                     ]
             }
             trainsInConnection st 1 `shouldBe` [1, 2]
@@ -57,7 +57,7 @@ spec = do
                     , _connections = S.singleton (Connection 1 (1,1) 1 1)
                     }
             let st = emptyState {
-                trainLocations = M.fromList [(1, TLocStation 1 False), (2, TLocConnection 1 1 0)]
+                trainLocations = M.fromList [(1, TLocStation 1 Boardable), (2, TLocConnection 1 1 0)]
             }
             result <- evalApp (stateIsValid st) ctx
             result `shouldBe` True
@@ -65,7 +65,7 @@ spec = do
         it "should recognize too many trains in station" $ do
             let ctx = emptyContext { _stations = S.singleton (Station 1 1) }
             let st = emptyState {
-                trainLocations = M.fromList [(1, TLocStation 1 False), (2, TLocStation 1 False)]
+                trainLocations = M.fromList [(1, TLocStation 1 Boardable), (2, TLocStation 1 Boardable)]
             }
             result <- evalApp (stateIsValid st) ctx
             result `shouldBe` False
@@ -103,6 +103,24 @@ spec = do
             result `shouldBe` False
 
     describe "Move train" $ do
+        it "train should stay boardable if reamining on station" $ do
+            let train = Train 1 Nothing 1 1
+            let ctx = emptyContext
+            let st = emptyState
+                    { trainLocations = M.singleton 1 (TLocStation 1 Boardable) }
+            result <- evalApp (moveTrain train st) ctx
+            let target = [ M.singleton 1 (TLocStation 1 Boardable) ]
+            S.fromList (trainLocations <$> result) `shouldBe` S.fromList target
+
+        it "train should be convert from arriving -> WillBeBoardable if staying" $ do
+            let train = Train 1 Nothing 1 1
+            let ctx = emptyContext
+            let st = emptyState
+                    { trainLocations = M.singleton 1 (TLocStation 1 Arriving) }
+            result <- evalApp (moveTrain train st) ctx
+            let target = [ M.singleton 1 (TLocStation 1 WillBeBoardable) ]
+            S.fromList (trainLocations <$> result) `shouldBe` S.fromList target
+
         it "train should stay in station / go on connection / go to next station if possible" $ do
             let train = Train 1 Nothing 1 1
             let ctx = emptyContext
@@ -110,12 +128,12 @@ spec = do
                     , _connections = S.fromList [Connection 1 (1,2) 1 1, Connection 2 (1,2) 1 2 ]
                     }
             let st = emptyState
-                    { trainLocations = M.singleton 1 (TLocStation 1 False) }
+                    { trainLocations = M.singleton 1 (TLocStation 1 Boardable) }
             result <- evalApp (moveTrain train st) ctx
             let target =
-                    [ M.singleton 1 (TLocStation 1 True)
+                    [ M.singleton 1 (TLocStation 1 Boardable)
                     , M.singleton 1 (TLocConnection 2 2 1)
-                    , M.singleton 1 (TLocStation 2 False)
+                    , M.singleton 1 (TLocStation 2 Arriving)
                     ]
             S.fromList (trainLocations <$> result) `shouldBe` S.fromList target
 
@@ -138,7 +156,7 @@ spec = do
             let st = emptyState
                     { trainLocations = M.singleton 1 (TLocConnection 1 2 1) }
             result <- evalApp (moveTrain train st) ctx
-            let target = [ M.singleton 1 (TLocStation 2 False) ]
+            let target = [ M.singleton 1 (TLocStation 2 Arriving) ]
             S.fromList (trainLocations <$> result) `shouldBe` S.fromList target
 
     describe "Move multiple trains" $ do
@@ -151,21 +169,21 @@ spec = do
                     }
             let st = emptyState {
                     trainLocations = M.fromList
-                            [ (1, TLocStation 1 False)
-                            , (2, TLocStation 2 False)
+                            [ (1, TLocStation 1 Boardable)
+                            , (2, TLocStation 2 Boardable)
                             ]
                     }
             let result = concat $ evalApp (moveTrains trains st) ctx
             let target =
-                    [ M.fromList [(1, TLocStation 1 True), (2, TLocStation 2 True)]
-                    , M.fromList [(1, TLocConnection 2 2 1), (2, TLocStation 2 True)]
-                    , M.fromList [(1, TLocStation 2 False), (2, TLocStation 2 True)]
-                    , M.fromList [(1, TLocStation 1 True), (2, TLocConnection 2 1 1)]
+                    [ M.fromList [(1, TLocStation 1 Boardable), (2, TLocStation 2 Boardable)]
+                    , M.fromList [(1, TLocConnection 2 2 1), (2, TLocStation 2 Boardable)]
+                    , M.fromList [(1, TLocStation 2 Arriving), (2, TLocStation 2 Boardable)]
+                    , M.fromList [(1, TLocStation 1 Boardable), (2, TLocConnection 2 1 1)]
                     , M.fromList [(1, TLocConnection 2 2 1), (2, TLocConnection 2 1 1)]
-                    , M.fromList [(1, TLocStation 2 False), (2, TLocConnection 2 1 1)]
-                    , M.fromList [(1, TLocStation 1 True), (2, TLocStation 1 False)]
-                    , M.fromList [(1, TLocConnection 2 2 1), (2, TLocStation 1 False)]
-                    , M.fromList [(1, TLocStation 2 False), (2, TLocStation 1 False)]
+                    , M.fromList [(1, TLocStation 2 Arriving), (2, TLocConnection 2 1 1)]
+                    , M.fromList [(1, TLocStation 1 Boardable), (2, TLocStation 1 Arriving)]
+                    , M.fromList [(1, TLocConnection 2 2 1), (2, TLocStation 1 Arriving)]
+                    , M.fromList [(1, TLocStation 2 Arriving), (2, TLocStation 1 Arriving)]
                     ]
             S.fromList (trainLocations <$> result) `shouldBe` S.fromList target
 
@@ -186,7 +204,7 @@ spec = do
             let ctx = emptyContext
             let st = emptyState
                     { passengerLocations = M.singleton 1 (PLocTrain 1)
-                    , trainLocations = M.singleton 1 (TLocStation 1 False)
+                    , trainLocations = M.fromList [(1, TLocStation 1 WillBeBoardable), (2, TLocStation 1 WillBeBoardable)]
                     }
             result <- evalApp (movePassenger passenger st) ctx
             let target = [ M.singleton 1 (PLocTrain 1) ]
@@ -197,7 +215,7 @@ spec = do
             let ctx = emptyContext
             let st = emptyState
                     { passengerLocations = M.singleton 1 (PLocTrain 1)
-                    , trainLocations = M.singleton 1 (TLocStation 1 True)
+                    , trainLocations = M.singleton 1 (TLocStation 1 Boardable)
                     }
             result <- evalApp (movePassenger passenger st) ctx
             let target = [ M.singleton 1 (PLocTrain 1), M.singleton 1 (PLocStation 1) ]
@@ -217,7 +235,7 @@ spec = do
             let ctx = emptyContext
             let st = emptyState
                     { passengerLocations = M.singleton 1 (PLocStation 1)
-                    , trainLocations = M.singleton 1 (TLocStation 1 False)
+                    , trainLocations = M.fromList [(1, TLocStation 1 WillBeBoardable), (2, TLocStation 1 WillBeBoardable)]
                     }
             result <- evalApp (movePassenger passenger st) ctx
             let target = [ M.singleton 1 (PLocStation 1) ]
@@ -229,9 +247,9 @@ spec = do
             let st = emptyState
                     { passengerLocations = M.singleton 1 (PLocStation 1)
                     , trainLocations = M.fromList
-                            [ (1, TLocStation 1 True)
-                            , (2, TLocStation 1 True)
-                            , (3, TLocStation 1 False)
+                            [ (1, TLocStation 1 Boardable)
+                            , (2, TLocStation 1 Boardable)
+                            , (3, TLocStation 1 Arriving)
                             ]
                     }
             result <- evalApp (movePassenger passenger st) ctx
@@ -259,7 +277,7 @@ spec = do
                             , (4, PLocTrain 2)
                             ]
                     , trainLocations = M.fromList
-                            [ (1, TLocStation 1 True)
+                            [ (1, TLocStation 1 Boardable)
                             , (2, TLocConnection 1 2 10)
                             ]
                     }

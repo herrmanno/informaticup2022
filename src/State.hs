@@ -22,7 +22,7 @@ import Context (Context(..), connectionsFrom, setTrainStartPositions, setPasseng
 import Types (ID)
 import Types.Station (Station(..))
 import Types.Connection (Connection(..))
-import Types.Train (Train(..), TrainLocation(..), TrainAction(..), isBoardable)
+import Types.Train (Train(..), TrainLocation(..), TrainStatus(..), TrainAction(..), isBoardable, makeBoardable, prepareBoarding)
 import Types.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..), isPLocStation)
 import Types.State
     ( PassengerActions,
@@ -52,11 +52,11 @@ instance Show State where
             ]
 
 emptyState :: State
-emptyState = State 1 M.empty M.empty M.empty M.empty
+emptyState = State 0 M.empty M.empty M.empty M.empty
 
 fromContext :: Context c => c -> [State]
 fromContext c = map createState ss where
-    createState (tloc, tacs) = State 1 tloc ploc tacs M.empty
+    createState (tloc, tacs) = State 0 tloc ploc tacs M.empty
     ploc = setPassengerStartLocations c
     ss = setTrainStartPositions c
 
@@ -74,10 +74,10 @@ trainsInStation s s_id = M.keys $ M.filter isAtStation locs where
     isAtStation _ = False
 
 trainsInConnection :: State -> ID Connection -> [ID Train]
-trainsInConnection s c_id = M.keys $ M.filter isAtStation locs where
+trainsInConnection s c_id = M.keys $ M.filter isOnConnection locs where
     locs = trainLocations s
-    isAtStation (TLocConnection c_id' _ _) | c_id == c_id' = True
-    isAtStation _ = False
+    isOnConnection (TLocConnection c_id' _ _) | c_id == c_id' = True
+    isOnConnection _ = False
 
 
 -----------------------------------------------------------
@@ -94,15 +94,17 @@ scoreForState s = do
     return $ sum pscores + sum tscores
 
 passengerScore :: Monad m => Passenger -> State -> App m Score
-passengerScore p s = do
-    c <- get
-    let d = distanceBetween c nextStation destination
-    let d' = d + nextStationDistance
-    let timeFactor = if time < arrival
-            then 1 / fromIntegral (arrival - time)
-            else fromIntegral (max 1 (time - arrival))
-    let trainFactor = if isPLocStation ploc then 0.5 else 0
-    return $ trainFactor + fromIntegral size * timeFactor * d'
+passengerScore p s
+    | ploc == PLocStation destination = return 0
+    | otherwise = do
+        c <- get
+        let d = distanceBetween c nextStation destination
+        let d' = d + nextStationDistance
+        let timeFactor = if time < arrival
+                then 1 / fromIntegral (arrival - time)
+                else fromIntegral (max 1 (time - arrival))
+        let trainFactor = if isPLocStation ploc then 0.5 else 0
+        return $ trainFactor + fromIntegral size * timeFactor * d'
     where
         State { time, passengerLocations } = s
         Passenger { p_id, destination, arrival, size } = p
@@ -170,12 +172,16 @@ stateIsValid s = do
 -----------------------------------------------------------
 
 nextStates :: State -> App [] [State]
-nextStates s = do
-    ts <- S.elems . trains <$> get
-    ps <- S.elems . passengers <$> get
-    ss <- moveTrains ts s
+nextStates state = do
+    trains <- S.elems . trains <$> get
+    passengers <- S.elems . passengers <$> get
+    ss <- moveTrains trains (tickTime state)
     s' <- lift ss
-    fmap (fmap tickTime) (movePassengers ps s')
+    ss' <- movePassengers passengers s'
+    return $ fmap makeAllArrivedTrainsBoardable ss'
+    where
+        makeAllArrivedTrainsBoardable s = s
+            { trainLocations = M.map makeBoardable (trainLocations s) }
 
 moveTrains :: [Train] -> State -> App [] [State]
 moveTrains [] s = return [s]
@@ -190,11 +196,11 @@ moveTrain train s = case tloc M.! tid of
         -- train is on connection in next round
         | distance > vel -> return [s { trainLocations = M.insert tid (TLocConnection c_id s_id (distance - vel)) tloc }]
         -- train reaches next station at next round
-        | otherwise -> return [s { trainLocations = M.insert tid (TLocStation s_id False) tloc }]
+        | otherwise -> return [s { trainLocations = M.insert tid (TLocStation s_id Arriving) tloc }]
     TLocStation s_id _ -> do
         c <- get
         let cs = S.elems $ connectionsFrom c s_id
-        let stayingTrain = s { trainLocations = M.insert tid (TLocStation s_id True) tloc }
+        let stayingTrain = s { trainLocations = M.update prepareBoarding tid  tloc }
             leavingTrains = flip fmap cs $
                 \(con, s_id') ->
                     let tac = Depart (time s) (c_id con)
@@ -206,7 +212,7 @@ moveTrain train s = case tloc M.! tid of
                             }
                         -- train reaches next station at next round
                         else s
-                            { trainLocations = M.insert tid (TLocStation s_id' False) tloc
+                            { trainLocations = M.insert tid (TLocStation s_id' Arriving) tloc
                             , trainActions = M.alter (Just . maybe [tac] (tac:)) tid tacs
                             }
         return $ stayingTrain : leavingTrains
@@ -231,7 +237,7 @@ movePassenger pas s = return $ case ploc M.! pid of
         in s : fmap doBoard availableTrains
     -- passenger at train -> [stay at station, leave if train is boardable]
     PLocTrain t_id -> case tloc M.! t_id of
-        TLocStation sid True -> [s, doUnboard sid]
+        TLocStation sid Boardable -> [s, doUnboard sid]
         _ -> [s]
     where
         pid = p_id pas

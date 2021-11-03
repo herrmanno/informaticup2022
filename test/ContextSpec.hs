@@ -9,7 +9,7 @@ import Context
       ContextType(_connections, _trains, _stations) )
 import Types.Station ( Station(Station) )
 import Types.Connection ( Connection(Connection) )
-import Types.Train ( TrainAction(Start), Train(Train), TrainLocation (TLocStation) )
+import Types.Train ( TrainAction(Start), Train(Train), TrainStatus(Boardable), TrainLocation (TLocStation) )
 import Data.Set qualified as S
 import Data.Map qualified as M
 
@@ -33,7 +33,7 @@ spec = do
             let ctx = emptyContext { _trains = S.singleton (Train trainID (Just 1) 1 1) }
             let result = setTrainStartPosition ctx trainID
             let target =
-                    [   ( M.singleton trainID (TLocStation 1 True)
+                    [   ( M.singleton trainID (TLocStation 1 Boardable)
                         , M.empty
                         )
                     ]
@@ -47,10 +47,10 @@ spec = do
                     }
             let result = setTrainStartPosition ctx trainID
             let target =
-                    [   ( M.singleton trainID (TLocStation 1 True)
+                    [   ( M.singleton trainID (TLocStation 1 Boardable)
                         , M.singleton trainID [Start 0 1]
                         )
-                    ,   ( M.singleton trainID (TLocStation 2 True)
+                    ,   ( M.singleton trainID (TLocStation 2 Boardable)
                         , M.singleton trainID [Start 0 2]
                         )
                     ]
@@ -63,16 +63,16 @@ spec = do
                     }
             let result = setTrainStartPositions ctx
             let target =
-                    [   ( M.fromList [(1, TLocStation 1 True), (2, TLocStation 1 True)]
+                    [   ( M.fromList [(1, TLocStation 1 Boardable), (2, TLocStation 1 Boardable)]
                         , M.fromList [(1, [Start 0 1]), (2, [Start 0 1])]
                         )
-                    ,   ( M.fromList [(1, TLocStation 1 True), (2, TLocStation 2 True)]
+                    ,   ( M.fromList [(1, TLocStation 1 Boardable), (2, TLocStation 2 Boardable)]
                         , M.fromList [(1, [Start 0 1]), (2, [Start 0 2])]
                         )
-                    ,   ( M.fromList [(1, TLocStation 2 True), (2, TLocStation 1 True)]
+                    ,   ( M.fromList [(1, TLocStation 2 Boardable), (2, TLocStation 1 Boardable)]
                         , M.fromList [(1, [Start 0 2]), (2, [Start 0 1])]
                         )
-                    ,   ( M.fromList [(1, TLocStation 2 True), (2, TLocStation 2 True)]
+                    ,   ( M.fromList [(1, TLocStation 2 Boardable), (2, TLocStation 2 Boardable)]
                         , M.fromList [(1, [Start 0 2]), (2, [Start 0 2])]
                         )
                     ]

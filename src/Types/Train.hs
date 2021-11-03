@@ -1,4 +1,13 @@
-module Types.Train (Train(..), hasNoStation, hasStation, TrainLocation(..), isBoardable, TrainAction(..)) where
+module Types.Train
+    ( Train(..)
+    , hasNoStation
+    , hasStation
+    , TrainLocation(..)
+    , TrainStatus(..)
+    , isBoardable
+    , makeBoardable
+    , prepareBoarding
+    , TrainAction(..)) where
 
 import Control.Lens (makeLenses)
 import Data.Maybe (isNothing)
@@ -19,9 +28,16 @@ hasStation = not . hasNoStation
 hasNoStation :: Train -> Bool
 hasNoStation t = isNothing (start t)
 
+-- | Mark status of train in station to distinguish between trains that are boardable and will be boardable
+data TrainStatus
+    = Arriving          -- ^ train will arrive station at end of round
+    | WillBeBoardable   -- ^ train stays at station and will be boardable *next round*
+    | Boardable         -- ^ train is at station and boardable
+    deriving (Show, Eq, Ord)
+
 data TrainLocation = TLocStation
                         (ID Station)    -- ^ current station
-                        Bool            -- ^ if the train is ready to board
+                        TrainStatus     -- ^ if the train is ready to board
                    | TLocConnection
                         (ID Connection) -- ^ current location
                         (ID Station)    -- ^ station heading to
@@ -29,8 +45,21 @@ data TrainLocation = TLocStation
                    deriving (Show, Eq, Ord)
 
 isBoardable :: TrainLocation -> Bool
-isBoardable (TLocStation _ b) = b
+isBoardable (TLocStation _ Boardable) = True
 isBoardable _ = False
+
+-- | Converts a `TLocStation sid WillBeBoardable` into `TLocStation sid Boardable`
+--   and returns other train locations as is
+makeBoardable :: TrainLocation -> TrainLocation
+makeBoardable (TLocStation sid WillBeBoardable) = TLocStation sid Boardable
+makeBoardable tloc = tloc
+
+-- | Sets TrainStatus=WillBeBoardable on non-boardable train locations
+--   Returns `Nothing` is tloc is not a TLocStation
+prepareBoarding :: TrainLocation -> Maybe TrainLocation
+prepareBoarding tloc@(TLocStation sid Boardable) = Just tloc
+prepareBoarding (TLocStation sid _) = Just $ TLocStation sid WillBeBoardable
+prepareBoarding tloc = Nothing
 
 data TrainAction = Start Int (ID Station)
                  | Depart Int (ID Connection) 
@@ -38,6 +67,6 @@ data TrainAction = Start Int (ID Station)
 
 instance Show TrainAction where
     show (Start time sid) = show time <> " Start S" <> show sid
-    show (Depart time cid) = show time <> " Line L" <> show cid
+    show (Depart time cid) = show time <> " Depart L" <> show cid
 
 makeLenses ''Train
