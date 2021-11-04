@@ -1,7 +1,8 @@
-module Types.Station (Station(..)) where
+module IC.Data.Station (Station(..)) where
 
 import Control.Lens (makeLenses)
-import Types (ID)
+
+import IC.Data.ID (ID)
 
 data Station = Station
     { s_id :: ID Station

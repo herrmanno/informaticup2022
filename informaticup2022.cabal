@@ -25,18 +25,20 @@ source-repository head
 
 library
   exposed-modules:
-      App
-      Context
-      Parser.Parser
-      Plan
-      PlanResult
-      State
-      Types
-      Types.Connection
-      Types.Passenger
-      Types.State
-      Types.Station
-      Types.Train
+      IC.Control.MonadPlan
+      IC.Data.Connection
+      IC.Data.Context
+      IC.Data.Context.Class
+      IC.Data.Context.DefaultContext
+      IC.Data.ID
+      IC.Data.Passenger
+      IC.Data.State
+      IC.Data.Station
+      IC.Data.Train
+      IC.Parser.Parser
+      IC.Planning.Plan
+      IC.Planning.PlanResult
+      IC.Planning.State
   other-modules:
       Paths_informaticup2022
   hs-source-dirs:
@@ -95,8 +97,8 @@ test-suite informaticup2022-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      ContextSpec
-      StateSpec
+      IC.Data.Context.DefaultContextSpec
+      IC.Planning.StateSpec
       Paths_informaticup2022
   hs-source-dirs:
       test

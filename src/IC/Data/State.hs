@@ -1,8 +1,10 @@
-module Types.State (TrainLocations, PassengerLocations, TrainActions, PassengerActions) where
+module IC.Data.State (TrainLocations, PassengerLocations, TrainActions, PassengerActions) where
+
 import Data.Map qualified  as M
-import Types (ID)
-import Types.Train ( Train, TrainAction, TrainLocation )
-import Types.Passenger ( Passenger, PassengerAction, PassengerLocation )
+
+import IC.Data.ID (ID)
+import IC.Data.Passenger ( Passenger, PassengerAction, PassengerLocation )
+import IC.Data.Train ( Train, TrainAction, TrainLocation )
 
 type  TrainLocations = M.Map (ID Train) TrainLocation
 type  PassengerLocations = M.Map (ID Passenger) PassengerLocation

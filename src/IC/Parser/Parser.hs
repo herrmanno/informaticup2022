@@ -1,5 +1,7 @@
-module Parser.Parser (parseContext) where
+module IC.Parser.Parser (parseContext) where
 
+import Control.Monad (void)
+import Data.Set qualified as S
 import Text.Parsec
     ( anyChar,
       char,
@@ -14,15 +16,14 @@ import Text.Parsec
       parse,
       ParseError,
       Parsec, (<|>), eof, noneOf )
-import Context (Context (makeContext))
 import Text.ParserCombinators.Parsec (Parser)
-import Types.Station (Station(Station))
-import Types (ID(ID))
-import qualified Data.Set as S
-import Types.Connection (Connection(..))
-import Types.Train (Train(..))
-import Types.Passenger (Passenger(..))
-import Control.Monad (void)
+
+import IC.Data.Connection (Connection(..))
+import IC.Data.Context.Class (Context (makeContext))
+import IC.Data.ID (ID(ID))
+import IC.Data.Passenger (Passenger(..))
+import IC.Data.Station (Station(Station))
+import IC.Data.Train (Train(..))
 
 parseContext :: Context c => String -> Either ParseError c
 parseContext = parse context "context input"

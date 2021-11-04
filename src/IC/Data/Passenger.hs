@@ -1,9 +1,10 @@
-module Types.Passenger (Passenger(..), PassengerLocation(..), isPLocStation, PassengerAction(..)) where
+module IC.Data.Passenger (Passenger(..), PassengerLocation(..), isPLocStation, PassengerAction(..)) where
 
 import Control.Lens (makeLenses)
-import Types (ID)
-import Types.Station (Station)
-import Types.Train (Train)
+
+import IC.Data.ID (ID)
+import IC.Data.Station (Station)
+import IC.Data.Train (Train)
 
 data Passenger = Passenger
     { p_id :: ID Passenger

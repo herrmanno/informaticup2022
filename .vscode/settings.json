@@ -9,5 +9,11 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
         ".stack-work/**": true,
-    }
+    },
+    "haskell.openDocumentationInHackage": false,
+    "haskell.openSourceInHackage": false,
+    "haskell.formattingProvider": "stylish-haskell",
+    "[haskell]": {
+        "editor.tabSize": 2,
+    },
 }

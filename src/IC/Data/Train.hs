@@ -1,19 +1,21 @@
-module Types.Train
+module IC.Data.Train
     ( Train(..)
-    , hasNoStation
-    , hasStation
     , TrainLocation(..)
     , TrainStatus(..)
+    , TrainAction(..)
+    , hasNoStation
+    , hasStation
     , isBoardable
     , makeBoardable
     , prepareBoarding
-    , TrainAction(..)) where
+    ) where
 
 import Control.Lens (makeLenses)
 import Data.Maybe (isNothing)
-import Types (ID)
-import Types.Station (Station)
-import Types.Connection (Connection)
+
+import IC.Data.Connection (Connection)
+import IC.Data.ID (ID)
+import IC.Data.Station (Station)
 
 data Train = Train
     { t_id :: ID Train

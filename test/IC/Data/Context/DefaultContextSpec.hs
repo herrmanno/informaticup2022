@@ -1,17 +1,22 @@
-module ContextSpec (spec) where
+module IC.Data.Context.DefaultContextSpec (spec) where
 
+import Data.Set qualified as S
+import Data.Map qualified as M
 import Test.Hspec ( SpecWith, describe, it, shouldBe )
-import Context
+
+import IC.Data.Connection ( Connection(Connection) )
+import IC.Data.Context.DefaultContext
     ( setTrainStartPositions,
       setTrainStartPosition,
       connectionsFrom,
       emptyContext,
-      ContextType(_connections, _trains, _stations) )
-import Types.Station ( Station(Station) )
-import Types.Connection ( Connection(Connection) )
-import Types.Train ( TrainAction(Start), Train(Train), TrainStatus(Boardable), TrainLocation (TLocStation) )
-import Data.Set qualified as S
-import Data.Map qualified as M
+      DefaultContext(_connections, _trains, _stations) )
+import IC.Data.Station ( Station(Station) )
+import IC.Data.Train
+    ( TrainAction(Start),
+      Train(Train),
+      TrainStatus(Boardable),
+      TrainLocation (TLocStation) )
 
 spec :: SpecWith ()
 spec = do

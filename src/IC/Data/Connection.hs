@@ -1,8 +1,8 @@
-module Types.Connection (Connection(..)) where
+module IC.Data.Connection (Connection(..)) where
 
 import Control.Lens (makeLenses)
-import Types (ID)
-import Types.Station (Station)
+import IC.Data.ID (ID)
+import IC.Data.Station (Station)
 
 data Connection = Connection
     { c_id :: ID Connection

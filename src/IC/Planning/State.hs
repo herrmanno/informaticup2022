@@ -1,5 +1,12 @@
-module State
-    ( State(..)
+{-|
+Offers a `State` type describing the train planning problem's state at a fixed point of time
+as well as various functions for manipulating such state and deriving following states.
+-}
+module IC.Planning.State
+    (
+    -- * Types
+      State(..)
+    , Score
     , emptyState
     , fromContext
     , trainsInStation
@@ -12,25 +19,36 @@ module State
     , movePassenger
     , stateIsValid
     , stateIsFinished
-    , Score
     ) where
 
+import Control.Monad.Trans.Class (lift)
 import Data.Map qualified as M
+import Data.Maybe (mapMaybe)
 import Data.Set qualified as S
-import App (App, get)
-import Context (Context(..), connectionsFrom, setTrainStartPositions, setPassengerStartLocations)
-import Types (ID)
-import Types.Station (Station(..))
-import Types.Connection (Connection(..))
-import Types.Train (Train(..), TrainLocation(..), TrainStatus(..), TrainAction(..), isBoardable, makeBoardable, prepareBoarding)
-import Types.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..), isPLocStation)
-import Types.State
+
+import IC.Control.MonadPlan (MonadPlan, get)
+import IC.Data.Connection (Connection(..))
+import IC.Data.Context
+    ( Context(..),
+      connectionsFrom,
+      setTrainStartPositions,
+      setPassengerStartLocations )
+import IC.Data.ID (ID)
+import IC.Data.Station (Station(..))
+import IC.Data.Train
+    ( Train(..),
+      TrainLocation(..),
+      TrainStatus(..),
+      TrainAction(..),
+      isBoardable,
+      makeBoardable,
+      prepareBoarding )
+import IC.Data.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..), isPLocStation)
+import IC.Data.State
     ( PassengerActions,
       TrainActions,
       PassengerLocations,
       TrainLocations )
-import Control.Monad.Trans.Class (lift)
-import Data.Maybe (mapMaybe)
 
 -----------------------------------------------------------
 --                  DATA
@@ -85,7 +103,7 @@ trainsInConnection s c_id = M.keys $ M.filter isOnConnection locs where
 -----------------------------------------------------------
 type Score = Double
 
-scoreForState :: Monad m => State -> App m Score
+scoreForState :: Monad m => State -> MonadPlan m Score
 scoreForState s = do
     ps <- S.elems . passengers <$> get
     ts <- S.elems . trains <$> get
@@ -93,7 +111,7 @@ scoreForState s = do
     tscores <- mapM (`trainScore` s) ts
     return $ sum pscores + sum tscores
 
-passengerScore :: Monad m => Passenger -> State -> App m Score
+passengerScore :: Monad m => Passenger -> State -> MonadPlan m Score
 passengerScore p s
     | ploc == PLocStation destination = return 0
     | otherwise = do
@@ -112,7 +130,7 @@ passengerScore p s
         nextStation = nextPassengerStation p_id s
         nextStationDistance = nextPassengerStationDistance p_id s
 
-trainScore :: Monad m => Train -> State -> App m Score
+trainScore :: Monad m => Train -> State -> MonadPlan m Score
 trainScore t s = do
     c <- get
     let trainStation = nextTrainStation tid s
@@ -152,7 +170,7 @@ nextTrainStationDistance tid s = case trainLocations s M.! tid of
 --                  VALIDATION
 -----------------------------------------------------------
 
-stateIsValid :: Monad m => State -> App m Bool
+stateIsValid :: Monad m => State -> MonadPlan m Bool
 stateIsValid s = do
     ss <- stations <$> get
     cs <- connections <$> get
@@ -171,7 +189,7 @@ stateIsValid s = do
 --                  MOVING
 -----------------------------------------------------------
 
-nextStates :: State -> App [] [State]
+nextStates :: State -> MonadPlan [] [State]
 nextStates state = do
     trains <- S.elems . trains <$> get
     passengers <- S.elems . passengers <$> get
@@ -183,14 +201,14 @@ nextStates state = do
         makeAllArrivedTrainsBoardable s = s
             { trainLocations = M.map makeBoardable (trainLocations s) }
 
-moveTrains :: [Train] -> State -> App [] [State]
+moveTrains :: [Train] -> State -> MonadPlan [] [State]
 moveTrains [] s = return [s]
 moveTrains (t:ts) s = do
     ss <- moveTrain t s
     s' <- lift ss
     moveTrains ts s'
 
-moveTrain :: Monad m => Train -> State -> App m [State]
+moveTrain :: Monad m => Train -> State -> MonadPlan m [State]
 moveTrain train s = case tloc M.! tid of
     TLocConnection c_id s_id distance
         -- train is on connection in next round
@@ -222,7 +240,7 @@ moveTrain train s = case tloc M.! tid of
         tacs = trainActions s
         vel = velocity train
 
-movePassengers :: [Passenger] -> State -> App [] [State]
+movePassengers :: [Passenger] -> State -> MonadPlan [] [State]
 movePassengers [] s = return [s]
 movePassengers (p:ps) s = do
     ss <- movePassenger p s
@@ -261,7 +279,7 @@ movePassenger pas s = return $ case ploc M.! pid of
 --                  RESULT CHECKING
 -----------------------------------------------------------
 
-stateIsFinished :: Monad m => State -> App m Bool
+stateIsFinished :: Monad m => State -> MonadPlan m Bool
 stateIsFinished s = do
     ps <- passengers <$> get
     return $ all isAtDestination ps

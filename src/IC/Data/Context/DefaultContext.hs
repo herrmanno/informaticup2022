@@ -1,55 +1,42 @@
-module Context
-    ( Context(..)
+module IC.Data.Context.DefaultContext
+    ( DefaultContext(..)
     , connectionsFrom
     , setPassengerStartLocations
     , setTrainStartPositions
     , setTrainStartPosition
-    -- only exported for testing purposes
-    , ContextType(..)
     , emptyContext
     ) where
 
-import Data.Set qualified as S
-import Data.Map qualified as M
-import Types (ID)
-import Types.Station ( Station(..) )
-import Types.Connection ( Connection(..) )
-import Types.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation, TrainStatus (Boardable) )
-import Types.Passenger ( Passenger (..), PassengerLocation (PLocStation) )
 import Control.Arrow (Arrow ((***)))
 import Data.Foldable (find)
+import Data.Map qualified as M
 import Data.Maybe (mapMaybe, fromJust)
-import Types.State (PassengerLocations, TrainLocations, TrainActions)
+import Data.Set qualified as S
 
-
------------------------------------------------------------
---                  CLASS
------------------------------------------------------------
-
-class Context c where
-    makeContext :: S.Set Station -> S.Set Connection -> S.Set Train -> S.Set Passenger -> c
-    stations :: c -> S.Set Station
-    connections :: c -> S.Set Connection
-    trains :: c -> S.Set Train
-    passengers :: c -> S.Set Passenger
-    distanceBetween :: c -> ID Station -> ID Station -> Double
+import IC.Data.Connection ( Connection(..) )
+import IC.Data.Context.Class (Context(..))
+import IC.Data.ID (ID)
+import IC.Data.Passenger ( Passenger (..), PassengerLocation (PLocStation) )
+import IC.Data.State (PassengerLocations, TrainLocations, TrainActions)
+import IC.Data.Station ( Station(..) )
+import IC.Data.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation, TrainStatus (Boardable) )
 
 -----------------------------------------------------------
 --                  DATA
 -----------------------------------------------------------
 
-data ContextType = ContextType
+data DefaultContext = DefaultContext
     { _stations :: S.Set Station
     , _connections :: S.Set Connection
     , _trains :: S.Set Train
     , _passengers :: S.Set Passenger
     } deriving (Show, Eq, Ord)
 
-emptyContext :: ContextType
-emptyContext = ContextType S.empty S.empty S.empty S.empty
+emptyContext :: DefaultContext
+emptyContext = DefaultContext S.empty S.empty S.empty S.empty
 
 -- TODO: should handle case where not connection exists between stations
-stationDistance :: ContextType -> ID Station -> ID Station -> Double
+stationDistance :: DefaultContext -> ID Station -> ID Station -> Double
 stationDistance c fromStation toStation = go fromStation toStation (S.singleton toStation) where
     go from to visited
         | from == to = 0
@@ -64,8 +51,8 @@ stationDistance c fromStation toStation = go fromStation toStation (S.singleton 
                 | otherwise = Nothing
         in mapMaybe f (S.elems $ _connections c)
 
-instance Context ContextType where
-    makeContext = ContextType
+instance Context DefaultContext where
+    makeContext = DefaultContext
     stations = _stations
     connections = _connections
     trains = _trains
