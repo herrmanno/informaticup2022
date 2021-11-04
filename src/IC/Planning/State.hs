@@ -7,16 +7,22 @@ module IC.Planning.State
     -- * Types
       State(..)
     , Score
+    -- * Functions
+    -- ** Creating a state
     , emptyState
     , fromContext
+    -- ** Accessing state information
     , trainsInStation
     , trainsInConnection
+    -- ** Calculating a state's score
     , scoreForState
+    -- ** Derive new states
     , nextStates
     , moveTrains
     , moveTrain
     , movePassengers
     , movePassenger
+    -- ** Validate a state
     , stateIsValid
     , stateIsFinished
     ) where
@@ -48,12 +54,13 @@ import           IC.Data.Train             (Train (..), TrainAction (..),
 --                  DATA
 -----------------------------------------------------------
 
+-- |A current state of all trains and passengers at a specific point of time
 data State = State
-    { time               :: Int
-    , trainLocations     :: TrainLocations
-    , passengerLocations :: PassengerLocations
-    , trainActions       :: TrainActions
-    , passengerActions   :: PassengerActions
+    { time               :: Int                 -- ^ point of time
+    , trainLocations     :: TrainLocations      -- ^ locations of all trains
+    , passengerLocations :: PassengerLocations  -- ^ locations of all passengers
+    , trainActions       :: TrainActions        -- ^ actions, executed so far, on all trains
+    , passengerActions   :: PassengerActions    -- ^ actions, executed so far, on all passengers
     } deriving (Eq, Ord)
 
 instance Show State where
@@ -63,9 +70,13 @@ instance Show State where
             , "ploc: " <> show (passengerLocations s)
             ]
 
+-- |Creates an empty state
 emptyState :: State
 emptyState = State 0 M.empty M.empty M.empty M.empty
 
+-- |Creates one or multiple states from a given context
+--  If there are trains with out a fixed start station this function
+--  will return multiple states.
 fromContext :: Context c => c -> [State]
 fromContext c = map createState ss where
     createState (tloc, tacs) = State 0 tloc ploc tacs M.empty
@@ -79,12 +90,14 @@ tickTime s = s { time = time s + 1 }
 --                  ACCESSORS
 -----------------------------------------------------------
 
+-- |Return the IDs of all trains resting in a given station
 trainsInStation :: State -> ID Station -> [ID Train]
 trainsInStation s s_id = M.keys $ M.filter isAtStation locs where
     locs = trainLocations s
     isAtStation (TLocStation s_id' _) | s_id == s_id' = True
     isAtStation _ = False
 
+-- |Return the IDs of all trains resting on a given connection
 trainsInConnection :: State -> ID Connection -> [ID Train]
 trainsInConnection s c_id = M.keys $ M.filter isOnConnection locs where
     locs = trainLocations s
@@ -95,8 +108,11 @@ trainsInConnection s c_id = M.keys $ M.filter isOnConnection locs where
 -----------------------------------------------------------
 --                  SCORING
 -----------------------------------------------------------
+-- |The type of score a given state has
+--  Lower values mean state should have higher priority
 type Score = Double
 
+-- |Calculates the score of a given state
 scoreForState :: Monad m => State -> MonadPlan m Score
 scoreForState s = do
     ps <- S.elems . passengers <$> get
@@ -164,6 +180,7 @@ nextTrainStationDistance tid s = case trainLocations s M.! tid of
 --                  VALIDATION
 -----------------------------------------------------------
 
+-- |Returns `True` if a state is valid (e.g. no station's or connection's capacity limit is disobeyed)
 stateIsValid :: Monad m => State -> MonadPlan m Bool
 stateIsValid s = do
     ss <- stations <$> get
@@ -183,6 +200,7 @@ stateIsValid s = do
 --                  MOVING
 -----------------------------------------------------------
 
+-- |Derives one or multiple states from a given state by moving all trains and passengers
 nextStates :: State -> MonadPlan [] [State]
 nextStates state = do
     trains <- S.elems . trains <$> get
@@ -273,6 +291,7 @@ movePassenger pas s = return $ case ploc M.! pid of
 --                  RESULT CHECKING
 -----------------------------------------------------------
 
+-- |Returns `True` if the given state is finished (e.g. all passengers are at destination station)
 stateIsFinished :: Monad m => State -> MonadPlan m Bool
 stateIsFinished s = do
     ps <- passengers <$> get

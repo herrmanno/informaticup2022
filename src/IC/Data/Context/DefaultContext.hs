@@ -1,10 +1,19 @@
+{-|
+A default implementation for the `IC.Data.Context.Class.Context` class
+-}
 module IC.Data.Context.DefaultContext
-    ( DefaultContext(..)
+    (
+    -- * Types
+      DefaultContext(..)
+    -- * Functions
+    -- ** Creating a context
+    , emptyContext
+    -- ** Accessing context information
     , connectionsFrom
+    -- ** Deriving partial state's from a context
     , setPassengerStartLocations
     , setTrainStartPositions
     , setTrainStartPosition
-    , emptyContext
     ) where
 
 import           Control.Arrow         (Arrow ((***)))
@@ -28,6 +37,7 @@ import           IC.Data.Train         (Train (..), TrainAction (..),
 --                  DATA
 -----------------------------------------------------------
 
+-- |A default implementation of the `Context` class
 data DefaultContext = DefaultContext
     { _stations    :: S.Set Station
     , _connections :: S.Set Connection
@@ -35,10 +45,10 @@ data DefaultContext = DefaultContext
     , _passengers  :: S.Set Passenger
     } deriving (Show, Eq, Ord)
 
+-- |Creates an empty default context
 emptyContext :: DefaultContext
 emptyContext = DefaultContext S.empty S.empty S.empty S.empty
 
--- TODO: should handle case where not connection exists between stations
 stationDistance :: DefaultContext -> ID Station -> ID Station -> Double
 stationDistance c fromStation toStation = go fromStation toStation (S.singleton toStation) where
     go from to visited
@@ -66,6 +76,7 @@ instance Context DefaultContext where
 --                  ACCESSORS
 -----------------------------------------------------------
 
+-- |Returns all connections (and the station they're pointing to) from the view of a given station
 connectionsFrom :: Context c => c -> ID Station -> S.Set (Connection, ID Station)
 connectionsFrom c s_id = cs where
     cs = S.map withOtherStation $ S.filter endsAtStation (connections c)
@@ -78,6 +89,7 @@ connectionsFrom c s_id = cs where
 --                  Prepare Context
 -----------------------------------------------------------
 
+-- |Extract the passenger locations from a context
 setPassengerStartLocations :: Context c => c -> PassengerLocations
 setPassengerStartLocations c = M.fromList $ map f (S.elems $ passengers c) where
     f Passenger { p_id, departure } = (p_id, PLocStation departure)

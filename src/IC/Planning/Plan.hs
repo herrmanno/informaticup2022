@@ -20,7 +20,12 @@ instance HeapItem StateScore (State, Score) where
     split (s,sc) = (P sc, s)
     merge (P sc,s) = (s,sc)
 
-findBestStateRoute :: Context c => c -> [State] -> Maybe State
+-- |Returns the final state of the optimal solution to a train plan problem
+findBestStateRoute
+    :: Context c
+    => c            -- ^ the initial problem context
+    -> [State]      -- ^ the initial states to start from
+    -> Maybe State
 findBestStateRoute c state = go (H.fromList (fmap stateWithScore state)) where
     go :: Heap StateScore (State, Score) -> Maybe State
     go heap = do

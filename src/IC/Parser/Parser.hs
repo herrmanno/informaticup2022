@@ -1,3 +1,6 @@
+{-|
+Parser for the train plan problem's input configuration
+-}
 module IC.Parser.Parser (parseContext) where
 
 import           Control.Monad                 (void)
@@ -15,6 +18,7 @@ import           Text.Parsec                   (ParseError, Parsec, anyChar,
                                                 spaces, string, (<|>))
 import           Text.ParserCombinators.Parsec (Parser)
 
+-- |Parses a problem configuration into a problem context type
 parseContext :: Context c => String -> Either ParseError c
 parseContext = parse context "context input"
 

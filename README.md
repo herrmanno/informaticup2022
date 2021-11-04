@@ -14,3 +14,10 @@ Required tools:
 
 ### run
 `cat inputfile.txt | stack run`
+
+## Codebase
+
+See [Haddock overview](.stack-work/dist/x86_64-osx/Cabal-3.2.1.0/doc/html/informaticup2022/index.html)
+
+### Create Documentation
+`stack haddock`

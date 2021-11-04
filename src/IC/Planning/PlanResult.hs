@@ -8,8 +8,12 @@ import qualified Data.Map          as M
 import           IC.Data.State     (PassengerActions, TrainActions)
 import           IC.Planning.State (State (passengerActions, trainActions))
 
+-- |A wrapper of a train plan problem's state
+--  Used solely for showing the state's actions in a way that
+--  is required by the official problem's description.
 data PlanResult = PlanResult TrainActions PassengerActions
 
+-- |Create a `PlanResult` from a given state
 fromState :: State -> PlanResult
 fromState s = PlanResult (trainActions s) (passengerActions s)
 
