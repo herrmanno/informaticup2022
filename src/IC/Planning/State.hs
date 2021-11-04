@@ -21,45 +21,39 @@ module IC.Planning.State
     , stateIsFinished
     ) where
 
-import Control.Monad.Trans.Class (lift)
-import Data.Map qualified as M
-import Data.Maybe (mapMaybe)
-import Data.Set qualified as S
-
-import IC.Control.MonadPlan (MonadPlan, get)
-import IC.Data.Connection (Connection(..))
-import IC.Data.Context
-    ( Context(..),
-      connectionsFrom,
-      setTrainStartPositions,
-      setPassengerStartLocations )
-import IC.Data.ID (ID)
-import IC.Data.Station (Station(..))
-import IC.Data.Train
-    ( Train(..),
-      TrainLocation(..),
-      TrainStatus(..),
-      TrainAction(..),
-      isBoardable,
-      makeBoardable,
-      prepareBoarding )
-import IC.Data.Passenger (Passenger(..), PassengerLocation(..), PassengerAction(..), isPLocStation)
-import IC.Data.State
-    ( PassengerActions,
-      TrainActions,
-      PassengerLocations,
-      TrainLocations )
+import           Control.Monad.Trans.Class (lift)
+import qualified Data.Map                  as M
+import           Data.Maybe                (mapMaybe)
+import qualified Data.Set                  as S
+import           IC.Control.MonadPlan      (MonadPlan, get)
+import           IC.Data.Connection        (Connection (..))
+import           IC.Data.Context           (Context (..), connectionsFrom,
+                                            setPassengerStartLocations,
+                                            setTrainStartPositions)
+import           IC.Data.ID                (ID)
+import           IC.Data.Passenger         (Passenger (..),
+                                            PassengerAction (..),
+                                            PassengerLocation (..),
+                                            isPLocStation)
+import           IC.Data.State             (PassengerActions,
+                                            PassengerLocations, TrainActions,
+                                            TrainLocations)
+import           IC.Data.Station           (Station (..))
+import           IC.Data.Train             (Train (..), TrainAction (..),
+                                            TrainLocation (..),
+                                            TrainStatus (..), isBoardable,
+                                            makeBoardable, prepareBoarding)
 
 -----------------------------------------------------------
 --                  DATA
 -----------------------------------------------------------
 
 data State = State
-    { time :: Int
-    , trainLocations :: TrainLocations
+    { time               :: Int
+    , trainLocations     :: TrainLocations
     , passengerLocations :: PassengerLocations
-    , trainActions :: TrainActions
-    , passengerActions :: PassengerActions
+    , trainActions       :: TrainActions
+    , passengerActions   :: PassengerActions
     } deriving (Eq, Ord)
 
 instance Show State where
@@ -141,16 +135,16 @@ trainScore t s = do
         tid = t_id t
         ploc = passengerLocations s
         passengerStation (PLocStation sid) = Just sid
-        passengerStation _ = Nothing
+        passengerStation _                 = Nothing
 
 nextPassengerStation :: ID Passenger -> State -> ID Station
 nextPassengerStation pid s = case passengerLocations s M.! pid of
     PLocStation sid -> sid
-    PLocTrain tid -> nextTrainStation tid s
+    PLocTrain tid   -> nextTrainStation tid s
 
 nextTrainStation :: ID Train -> State -> ID Station
 nextTrainStation tid s = case trainLocations s M.! tid of
-    TLocStation sid _ -> sid
+    TLocStation sid _      -> sid
     TLocConnection _ sid _ -> sid
 
 nextPassengerStationDistance :: ID Passenger -> State -> Double
@@ -163,7 +157,7 @@ nextPassengerStationDistance pid s = case passengerLocations s M.! pid of
 -- FIXME: does not use train's velocity!
 nextTrainStationDistance :: ID Train -> State -> Double
 nextTrainStationDistance tid s = case trainLocations s M.! tid of
-    TLocStation _ _ -> 0
+    TLocStation _ _      -> 0
     TLocConnection _ _ d -> d
 
 -----------------------------------------------------------
@@ -256,7 +250,7 @@ movePassenger pas s = return $ case ploc M.! pid of
     -- passenger at train -> [stay at station, leave if train is boardable]
     PLocTrain t_id -> case tloc M.! t_id of
         TLocStation sid Boardable -> [s, doUnboard sid]
-        _ -> [s]
+        _                         -> [s]
     where
         pid = p_id pas
         ploc = passengerLocations s

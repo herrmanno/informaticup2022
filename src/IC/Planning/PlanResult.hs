@@ -3,9 +3,9 @@ Utilities for showing the result of train plan problem's solution
 -}
 module IC.Planning.PlanResult (PlanResult, fromState) where
 
-import           Data.List     (intercalate, sort)
-import qualified Data.Map      as M
-import           IC.Data.State (PassengerActions, TrainActions)
+import           Data.List         (intercalate, sort)
+import qualified Data.Map          as M
+import           IC.Data.State     (PassengerActions, TrainActions)
 import           IC.Planning.State (State (passengerActions, trainActions))
 
 data PlanResult = PlanResult TrainActions PassengerActions

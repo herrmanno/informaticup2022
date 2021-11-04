@@ -1,9 +1,8 @@
 module IC.Control.MonadPlan (MonadPlan, MonadPlanT, evalPlan, get) where
 
-import Control.Monad.Trans.Class (lift, MonadTrans)
-import Control.Monad.Trans.Reader (ReaderT (runReaderT, ReaderT), ask)
-
-import IC.Data.Context.Class (Context)
+import           Control.Monad.Trans.Class  (MonadTrans, lift)
+import           Control.Monad.Trans.Reader (ReaderT (ReaderT, runReaderT), ask)
+import           IC.Data.Context.Class      (Context)
 
 -- TODO: remove existential type and use (Context c) constraint on functions instead
 -- | Monad type for computations that require access to the planning context

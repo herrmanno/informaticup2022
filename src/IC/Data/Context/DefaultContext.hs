@@ -7,29 +7,32 @@ module IC.Data.Context.DefaultContext
     , emptyContext
     ) where
 
-import Control.Arrow (Arrow ((***)))
-import Data.Foldable (find)
-import Data.Map qualified as M
-import Data.Maybe (mapMaybe, fromJust)
-import Data.Set qualified as S
-
-import IC.Data.Connection ( Connection(..) )
-import IC.Data.Context.Class (Context(..))
-import IC.Data.ID (ID)
-import IC.Data.Passenger ( Passenger (..), PassengerLocation (PLocStation) )
-import IC.Data.State (PassengerLocations, TrainLocations, TrainActions)
-import IC.Data.Station ( Station(..) )
-import IC.Data.Train ( TrainAction(..), Train(..), TrainLocation (TLocStation), hasStation, TrainStatus (Boardable) )
+import           Control.Arrow         (Arrow ((***)))
+import           Data.Foldable         (find)
+import qualified Data.Map              as M
+import           Data.Maybe            (fromJust, mapMaybe)
+import qualified Data.Set              as S
+import           IC.Data.Connection    (Connection (..))
+import           IC.Data.Context.Class (Context (..))
+import           IC.Data.ID            (ID)
+import           IC.Data.Passenger     (Passenger (..),
+                                        PassengerLocation (PLocStation))
+import           IC.Data.State         (PassengerLocations, TrainActions,
+                                        TrainLocations)
+import           IC.Data.Station       (Station (..))
+import           IC.Data.Train         (Train (..), TrainAction (..),
+                                        TrainLocation (TLocStation),
+                                        TrainStatus (Boardable), hasStation)
 
 -----------------------------------------------------------
 --                  DATA
 -----------------------------------------------------------
 
 data DefaultContext = DefaultContext
-    { _stations :: S.Set Station
+    { _stations    :: S.Set Station
     , _connections :: S.Set Connection
-    , _trains :: S.Set Train
-    , _passengers :: S.Set Passenger
+    , _trains      :: S.Set Train
+    , _passengers  :: S.Set Passenger
     } deriving (Show, Eq, Ord)
 
 emptyContext :: DefaultContext
@@ -84,14 +87,14 @@ setTrainStartPositions :: Context c => c -> [(TrainLocations, TrainActions)]
 setTrainStartPositions c = go trainIDs where
     trainIDs = S.elems $ S.map t_id $ trains c
     go :: [ID Train] -> [(TrainLocations, TrainActions)]
-    go [] = []
+    go []     = []
     go (t:ts) = let cs = setTrainStartPosition c t in concatMap (merge ts) cs
     merge [] (tloc,tas) = [(tloc,tas)]
     merge ts (tloc,tas) = let results = go ts in fmap (M.union tloc *** M.union tas) results
 
 -- | Returns a list of state where the start station of a train is set to all available stations
 setTrainStartPosition :: Context c => c -> ID Train -> [(TrainLocations, TrainActions)]
-setTrainStartPosition c tid 
+setTrainStartPosition c tid
     | hasStation t = let sid = fromJust (start t) in [ (M.singleton tid (TLocStation sid Boardable), M.empty) ]
     | otherwise =
         [ (tloc, tas)
@@ -102,6 +105,6 @@ setTrainStartPosition c tid
     where
         t = case find ((==tid) . t_id) (S.elems ts) of
             Just t' -> t'
-            _ -> error $ "Bad train id: " <> show tid
+            _       -> error $ "Bad train id: " <> show tid
         ss = stations c
         ts = trains c

@@ -15,5 +15,6 @@
     "haskell.formattingProvider": "stylish-haskell",
     "[haskell]": {
         "editor.tabSize": 2,
+        "editor.formatOnSave": true,
     },
 }

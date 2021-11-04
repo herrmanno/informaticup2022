@@ -1,29 +1,19 @@
 module IC.Parser.Parser (parseContext) where
 
-import Control.Monad (void)
-import Data.Set qualified as S
-import Text.Parsec
-    ( anyChar,
-      char,
-      digit,
-      endOfLine,
-      spaces,
-      string,
-      many1,
-      optionMaybe,
-      optional,
-      many,
-      parse,
-      ParseError,
-      Parsec, (<|>), eof, noneOf )
-import Text.ParserCombinators.Parsec (Parser)
-
-import IC.Data.Connection (Connection(..))
-import IC.Data.Context.Class (Context (makeContext))
-import IC.Data.ID (ID(ID))
-import IC.Data.Passenger (Passenger(..))
-import IC.Data.Station (Station(Station))
-import IC.Data.Train (Train(..))
+import           Control.Monad                 (void)
+import qualified Data.Set                      as S
+import           IC.Data.Connection            (Connection (..))
+import           IC.Data.Context.Class         (Context (makeContext))
+import           IC.Data.ID                    (ID (ID))
+import           IC.Data.Passenger             (Passenger (..))
+import           IC.Data.Station               (Station (Station))
+import           IC.Data.Train                 (Train (..))
+import           Text.Parsec                   (ParseError, Parsec, anyChar,
+                                                char, digit, endOfLine, eof,
+                                                many, many1, noneOf,
+                                                optionMaybe, optional, parse,
+                                                spaces, string, (<|>))
+import           Text.ParserCombinators.Parsec (Parser)
 
 parseContext :: Context c => String -> Either ParseError c
 parseContext = parse context "context input"
@@ -112,7 +102,7 @@ number :: (Num a, Read a) => Parsec String u a
 number = toNum <$> many1 digit <*> optionMaybe (char '.' *> many1 digit)
   where
     toNum a (Just b) = read $ a <> "." <> b
-    toNum a _ = read a
+    toNum a _        = read a
 
 comment :: Parsec String u ()
 comment = char '#' >> many (noneOf "\n") >> endOfLine >> return ()

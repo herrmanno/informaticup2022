@@ -8,7 +8,7 @@ import           Data.Heap             (Heap, HeapItem, Prio, Val)
 import qualified Data.Heap             as H
 import           IC.Control.MonadPlan  (evalPlan)
 import           IC.Data.Context.Class (Context)
-import           IC.Planning.State         (Score, State, nextStates, scoreForState,
+import           IC.Planning.State     (Score, State, nextStates, scoreForState,
                                         stateIsFinished, stateIsValid)
 
 data StateScore
