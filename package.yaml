@@ -66,6 +66,7 @@ executables:
     - -Wno-implicit-prelude # Dont' warn on implicit Prelude import
     - -Wno-missing-safe-haskell-mode
     - -Wno-missing-deriving-strategies # Dont' enforce explitic deriving strategy
+    - -Wno-prepositive-qualified-module # Allow qualified before module name in import list
     dependencies:
     - informaticup2022
 
@@ -74,9 +75,6 @@ tests:
     main:                Spec.hs
     source-dirs:         test
     ghc-options: *exe-ghc-options
-    # - -threaded
-    # - -rtsopts
-    # - -with-rtsopts=-N
     dependencies:
     - informaticup2022
     - hspec
