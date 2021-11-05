@@ -7,7 +7,6 @@ module IC.Data.Train
     , hasStation
     , isBoardable
     , makeBoardable
-    , prepareBoarding
     ) where
 
 import           Control.Lens       (makeLenses)
@@ -37,7 +36,6 @@ hasNoStation t = isNothing (start t)
 -- | Mark status of train in station to distinguish between trains that are boardable and will be boardable
 data TrainStatus
     = Arriving          -- ^ train will arrive station at end of round
-    | WillBeBoardable   -- ^ train stays at station and will be boardable *next round*
     | Boardable         -- ^ train is at station and boardable
     deriving (Show, Eq, Ord)
 
@@ -58,18 +56,11 @@ isBoardable :: TrainLocation -> Bool
 isBoardable (TLocStation _ Boardable) = True
 isBoardable _                         = False
 
--- | Converts a `TLocStation sid WillBeBoardable` into `TLocStation sid Boardable`
+-- | Converts a `TLocStation sid Arriving` into `TLocStation sid Boardable`
 --   and returns other train locations as is
 makeBoardable :: TrainLocation -> TrainLocation
-makeBoardable (TLocStation sid WillBeBoardable) = TLocStation sid Boardable
-makeBoardable tloc                              = tloc
-
--- | Sets TrainStatus=WillBeBoardable on non-boardable train locations
---   Returns `Nothing` is tloc is not a TLocStation
-prepareBoarding :: TrainLocation -> Maybe TrainLocation
-prepareBoarding tloc@(TLocStation sid Boardable) = Just tloc
-prepareBoarding (TLocStation sid _) = Just $ TLocStation sid WillBeBoardable
-prepareBoarding tloc = Nothing
+makeBoardable (TLocStation sid Arriving) = TLocStation sid Boardable
+makeBoardable tloc                       = tloc
 
 -- |Actions a train can take
 data TrainAction

@@ -230,7 +230,7 @@ moveTrain train s = case tloc M.! tid of
     TLocStation s_id _ -> do
         c <- get
         let cs = S.elems $ connectionsFrom c s_id
-        let stayingTrain = s { trainLocations = M.update prepareBoarding tid  tloc }
+        let stayingTrain = s
             leavingTrains = flip fmap cs $
                 \(con, s_id') ->
                     let tac = Depart (time s) (c_id con)
