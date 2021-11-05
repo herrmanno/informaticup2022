@@ -27,6 +27,7 @@ module IC.Planning.State
     , stateIsFinished
     ) where
 
+import           Control.Monad             (filterM)
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.Map                  as M
 import           Data.Maybe                (mapMaybe)
@@ -48,7 +49,7 @@ import           IC.Data.Station           (Station (..))
 import           IC.Data.Train             (Train (..), TrainAction (..),
                                             TrainLocation (..),
                                             TrainStatus (..), isBoardable,
-                                            makeBoardable, prepareBoarding)
+                                            makeBoardable)
 
 -----------------------------------------------------------
 --                  DATA
@@ -77,11 +78,13 @@ emptyState = State 0 M.empty M.empty M.empty M.empty
 -- |Creates one or multiple states from a given context
 --  If there are trains with out a fixed start station this function
 --  will return multiple states.
-fromContext :: Context c => c -> [State]
-fromContext c = map createState ss where
-    createState (tloc, tacs) = State 0 tloc ploc tacs M.empty
-    ploc = setPassengerStartLocations c
-    ss = setTrainStartPositions c
+fromContext :: Monad m => MonadPlan m [State]
+fromContext = do
+    c <- get
+    let ploc = setPassengerStartLocations c
+        ss = setTrainStartPositions c
+        createState (tloc, tacs) = State 0 tloc ploc tacs M.empty
+    filterM stateIsValid (map createState ss)
 
 tickTime :: State -> State
 tickTime s = s { time = time s + 1 }
@@ -205,9 +208,9 @@ nextStates :: State -> MonadPlan [] [State]
 nextStates state = do
     trains <- S.elems . trains <$> get
     passengers <- S.elems . passengers <$> get
-    ss <- moveTrains trains (tickTime state)
+    ss <- moveTrains trains (tickTime state) >>= filterM stateIsValid
     s' <- lift ss
-    ss' <- movePassengers passengers s'
+    ss' <- movePassengers passengers s' >>= filterM stateIsValid
     return $ fmap makeAllArrivedTrainsBoardable ss'
     where
         makeAllArrivedTrainsBoardable s = s
@@ -252,7 +255,7 @@ moveTrain train s = case tloc M.! tid of
         tacs = trainActions s
         vel = velocity train
 
-movePassengers :: [Passenger] -> State -> MonadPlan [] [State]
+movePassengers :: [Passenger] -> State -> MonadPlan [] [State]
 movePassengers [] s = return [s]
 movePassengers (p:ps) s = do
     ss <- movePassenger p s

@@ -1,5 +1,6 @@
 module Main (main) where
 
+import           IC.Control.MonadPlan   (evalPlan)
 import           IC.Data.Context        (Context, DefaultContext (..))
 import           IC.Parser.Parser       (parseContext)
 import           IC.Planning.Plan       (findBestStateRoute)
@@ -16,7 +17,7 @@ main = do
 
 run :: Context c => c -> IO ()
 run context = do
-    let ss = fromContext context
+    ss <- evalPlan fromContext context
     case findBestStateRoute context ss of
         Just result -> print $ fromState result
         Nothing     -> print "ERROR: not best plan found"
